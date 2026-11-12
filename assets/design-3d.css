@@ -1,0 +1,298 @@
+/* ==========================================================
+   BoxBonus — 3D animation & UX layer
+   Loaded after style.css. Presentation only; no logic here.
+   ========================================================== */
+
+:root{
+  --ease-out:cubic-bezier(.16,1,.3,1);
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  --ok:#5fd16b;--bad:#ff6b7a;--warn:#ffc65c;
+  --glow:color-mix(in srgb,var(--accent) 38%,transparent);
+}
+:root[data-theme=light]{--ok:#2e9e43;--bad:#d6334a;--warn:#c98a10}
+
+/* ---------- Accessibility helpers ---------- */
+.skip-link{position:fixed;left:14px;top:-60px;z-index:200;background:var(--accent);color:#172313;padding:10px 16px;border-radius:10px;font-weight:700;font-size:13px;text-decoration:none;transition:top .25s var(--ease-out)}
+.skip-link:focus{top:12px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
+input:focus-visible{outline:none}
+
+/* ---------- 3D ambient scene (floating cubes + perspective floor) ---------- */
+.scene3d{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;perspective:900px;perspective-origin:50% 40%}
+.scene3d .floor{position:absolute;left:-50%;right:-50%;bottom:-18%;height:62%;transform:rotateX(68deg);transform-origin:50% 100%;
+  background-image:linear-gradient(var(--glow) 1px,transparent 1px),linear-gradient(90deg,var(--glow) 1px,transparent 1px);
+  background-size:64px 64px;opacity:.22;animation:floor-run 7s linear infinite;
+  -webkit-mask-image:linear-gradient(to top,#000 5%,transparent 80%);mask-image:linear-gradient(to top,#000 5%,transparent 80%)}
+@keyframes floor-run{to{background-position:0 64px}}
+.scene3d .cube{position:absolute;left:var(--x);top:var(--y);width:var(--s);height:var(--s);transform-style:preserve-3d;
+  animation:cube-spin var(--d) linear infinite,cube-float calc(var(--d)*.45) ease-in-out infinite alternate;opacity:.55}
+.scene3d .cube i{position:absolute;inset:0;border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);
+  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 13%,transparent),color-mix(in srgb,var(--purple) 9%,transparent));
+  box-shadow:inset 0 0 22px color-mix(in srgb,var(--accent) 12%,transparent);backdrop-filter:blur(1px)}
+.scene3d .cube i:nth-child(1){transform:translateZ(calc(var(--s)/2))}
+.scene3d .cube i:nth-child(2){transform:rotateY(180deg) translateZ(calc(var(--s)/2))}
+.scene3d .cube i:nth-child(3){transform:rotateY(90deg) translateZ(calc(var(--s)/2))}
+.scene3d .cube i:nth-child(4){transform:rotateY(-90deg) translateZ(calc(var(--s)/2))}
+.scene3d .cube i:nth-child(5){transform:rotateX(90deg) translateZ(calc(var(--s)/2))}
+.scene3d .cube i:nth-child(6){transform:rotateX(-90deg) translateZ(calc(var(--s)/2))}
+@keyframes cube-spin{from{transform:rotateX(0) rotateY(0) rotateZ(0)}to{transform:rotateX(360deg) rotateY(360deg) rotateZ(180deg)}}
+@keyframes cube-float{from{translate:0 -16px}to{translate:0 22px}}
+.scene3d{--px:0;--py:0}
+.scene3d .layer{position:absolute;inset:0;transform:translate3d(calc(var(--px)*var(--k,1)*1px),calc(var(--py)*var(--k,1)*1px),0);transition:transform .5s var(--ease-out)}
+
+main.container,.footer{position:relative}
+
+/* ---------- Page entrance ---------- */
+main.container{animation:page-in .85s var(--ease-out) both;transform-origin:50% 0}
+@keyframes page-in{from{opacity:0;transform:perspective(1200px) rotateX(6deg) translateY(26px)}to{opacity:1;transform:none}}
+.topbar{animation:drop-in .7s var(--ease-out) both}
+@keyframes drop-in{from{opacity:0;transform:translateY(-100%)}to{opacity:1;transform:none}}
+
+/* ---------- Brand mark: 3D flip ---------- */
+.brand{perspective:500px}
+.brand-mark{display:inline-grid;transform-style:preserve-3d;transition:transform .8s var(--ease-spring);box-shadow:0 6px 18px var(--glow)}
+.brand:hover .brand-mark{transform:rotateY(360deg)}
+
+/* ---------- Panels: depth, glare, layered parallax ---------- */
+.panel{position:relative;will-change:transform;transform-style:preserve-3d;
+  transition:transform .35s var(--ease-out),border-color .3s,box-shadow .35s}
+.panel::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s;
+  background:radial-gradient(420px circle at var(--mx,50%) var(--my,0%),color-mix(in srgb,var(--accent) 14%,transparent),transparent 55%)}
+.panel:hover::after{opacity:1}
+.panel:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line));
+  box-shadow:0 34px 80px rgba(0,0,0,.34),0 0 0 1px color-mix(in srgb,var(--accent) 12%,transparent)}
+:root[data-theme=light] .panel:hover{box-shadow:0 30px 70px rgba(46,61,105,.2)}
+.panel h1,.panel h2,.panel h3{transform:translateZ(26px)}
+.panel .eyebrow,.panel form,.panel .points-number,.panel .big-rate{transform:translateZ(18px)}
+
+/* Staggered 3D reveal (JS adds .js-reveal / .is-visible) */
+.js-reveal{transform:perspective(1000px) translateY(34px) rotateX(10deg) scale(.97);transform-origin:50% 100%}
+.js-reveal.is-visible{transform:none}
+/* Reveal uses a slow transition; once visible, tilt uses a snappy one. Inline tilt transform wins over these classes. */
+.panel.js-reveal{transition:opacity .8s var(--ease-out),transform .8s var(--ease-out),border-color .3s,box-shadow .35s}
+.panel.js-reveal.is-visible{transition:transform .35s var(--ease-out),border-color .3s,box-shadow .35s}
+
+/* ---------- Buttons: tactile 3D press + shine + ripple ---------- */
+.btn{position:relative;overflow:hidden;transform-style:preserve-3d;isolation:isolate;
+  transition:transform .25s var(--ease-spring),box-shadow .25s,filter .2s}
+.btn::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.38) 50%,transparent 70%);transform:translateX(-120%);transition:transform .7s var(--ease-out)}
+.btn:hover::before{transform:translateX(120%)}
+.btn-primary{box-shadow:0 1px 0 rgba(255,255,255,.45) inset,0 -3px 0 rgba(0,0,0,.18) inset,0 12px 28px var(--glow)}
+.btn:hover{transform:translateY(-3px) perspective(500px) rotateX(6deg)}
+.btn:active{transform:translateY(1px) scale(.97);box-shadow:0 2px 8px var(--glow)}
+.btn[disabled],.btn.is-loading{cursor:not-allowed;opacity:.62;transform:none;filter:saturate(.6)}
+.btn[disabled]::before{display:none}
+.ripple{position:absolute;border-radius:50%;pointer-events:none;background:rgba(255,255,255,.5);transform:scale(0);animation:ripple .65s ease-out forwards;z-index:-1}
+@keyframes ripple{to{transform:scale(1);opacity:0}}
+.btn.is-loading{pointer-events:none}
+.btn.is-loading .spin{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- Points orb → spinning 3D coin ---------- */
+.points-card{overflow:visible}
+.points-orb{width:58px;height:58px;display:grid;place-items:center;border-radius:50%;perspective:400px;text-shadow:none;filter:none;animation:none;
+  background:radial-gradient(circle at 30% 25%,#fff7c9,#f2c65d 45%,#b6842a);color:#6a4710;font-size:26px;
+  box-shadow:0 0 0 3px rgba(255,255,255,.25) inset,0 14px 34px rgba(242,198,93,.45);animation:coin-spin 5.5s var(--ease-out) infinite;transform-style:preserve-3d}
+@keyframes coin-spin{0%,55%{transform:rotateY(0)}85%,100%{transform:rotateY(720deg)}}
+.points-number{font-variant-numeric:tabular-nums;text-shadow:0 8px 30px var(--glow)}
+.progress-track span{position:relative;transform-origin:left;animation:bar-grow 1.2s var(--ease-out) .35s both;
+  background:linear-gradient(90deg,var(--accent),var(--accent2),var(--cyan));box-shadow:0 0 14px var(--glow)}
+.progress-track span::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);transform:translateX(-100%);animation:bar-shine 2.6s ease-in-out 1.6s infinite}
+@keyframes bar-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes bar-shine{60%,100%{transform:translateX(100%)}}
+
+/* ---------- Metric cards: 3D flip-in ---------- */
+.metric-grid{perspective:1100px}
+.metric-card{animation:flip-in .9s var(--ease-out) both;transform-origin:50% 100%}
+.metric-card:nth-child(1){animation-delay:.05s}.metric-card:nth-child(2){animation-delay:.15s}
+.metric-card:nth-child(3){animation-delay:.25s}.metric-card:nth-child(4){animation-delay:.35s}
+@keyframes flip-in{from{opacity:0;transform:rotateX(-70deg) translateY(30px)}to{opacity:1;transform:none}}
+.metric-icon{transition:transform .6s var(--ease-spring)}
+.metric-card:hover .metric-icon{transform:rotateY(360deg) scale(1.15)}
+
+/* ---------- Lists: slide-in cascade ---------- */
+.notification-item,.activity-item,.code-list code,tbody tr{animation:item-in .6s var(--ease-out) both}
+.notification-item:nth-child(2),.activity-item:nth-child(2),tbody tr:nth-child(2){animation-delay:.06s}
+.notification-item:nth-child(3),.activity-item:nth-child(3),tbody tr:nth-child(3){animation-delay:.12s}
+.notification-item:nth-child(4),.activity-item:nth-child(4),tbody tr:nth-child(4){animation-delay:.18s}
+.notification-item:nth-child(n+5),.activity-item:nth-child(n+5),tbody tr:nth-child(n+5){animation-delay:.24s}
+@keyframes item-in{from{opacity:0;transform:perspective(700px) translateX(-24px) rotateY(-12deg)}to{opacity:1;transform:none}}
+.notification-item,.activity-item{transition:transform .3s var(--ease-out),background .3s}
+.notification-item:hover,.activity-item:hover{transform:translateX(6px) translateZ(0)}
+.notification-item.is-unread .notification-icon{animation:badge-pulse 2.2s ease-in-out infinite}
+@keyframes badge-pulse{0%,100%{box-shadow:0 0 0 0 var(--glow)}50%{box-shadow:0 0 0 9px transparent}}
+.notification-nav b{animation:pop 2.4s var(--ease-spring) infinite}
+@keyframes pop{0%,86%,100%{transform:scale(1)}92%{transform:scale(1.35)}}
+.code-list code{transition:transform .25s var(--ease-spring),box-shadow .25s}
+.code-list code:hover{transform:translateY(-3px) rotateX(10deg) scale(1.04);box-shadow:0 10px 24px var(--glow)}
+
+/* ---------- Flash notices as slide-in toasts ---------- */
+.notice{animation:toast-in .7s var(--ease-spring) both;transform-origin:50% 0}
+@keyframes toast-in{from{opacity:0;transform:perspective(700px) translateY(-24px) rotateX(-30deg)}to{opacity:1;transform:none}}
+.notice.is-leaving{animation:toast-out .45s ease forwards}
+@keyframes toast-out{to{opacity:0;transform:perspective(700px) translateY(-18px) rotateX(30deg);margin-top:-60px}}
+
+/* ---------- Auth pages: floating 3D box ---------- */
+.floating-box{animation:box-bob 5.5s ease-in-out infinite}
+@keyframes box-bob{0%,100%{translate:0 0}50%{translate:0 -14px}}
+.auth-panel{animation:card-in 1s var(--ease-out) .15s both}
+@keyframes card-in{from{opacity:0;transform:perspective(1100px) rotateY(-22deg) translateX(40px)}to{opacity:1;transform:none}}
+.hero-copy h1{animation:text-in 1s var(--ease-out) both}
+@keyframes text-in{from{opacity:0;transform:perspective(900px) rotateX(-24deg) translateY(30px)}to{opacity:1;transform:none}}
+
+/* ---------- Landing: extra depth ---------- */
+.how-step{transform-style:preserve-3d;transition:transform .5s var(--ease-out),box-shadow .4s}
+.how-step:hover{transform:perspective(900px) rotateX(5deg) rotateY(-6deg) translateY(-10px);box-shadow:0 36px 70px rgba(0,0,0,.3)}
+.step-visual{transform:translateZ(30px)}
+.landing-banner{transform-style:preserve-3d}
+.landing-banner .banner-orb{animation:orb-drift 9s ease-in-out infinite alternate}
+@keyframes orb-drift{to{transform:translate3d(-30px,20px,0) scale(1.08)}}
+
+/* ==========================================================
+   FORM VALIDATION UX
+   ========================================================== */
+/* Inputs for names/emails/passwords must not be forced uppercase */
+input[type=email],input[type=password],input[type=text],input[name=name]{text-transform:none;letter-spacing:normal;font-weight:500}
+input[name=code]{text-transform:uppercase;letter-spacing:3px;font-weight:700;font-variant-ligatures:none}
+
+.field{display:block;position:relative}
+.field-control{position:relative;display:block}
+.field-control input{padding-right:46px}
+.field-state{position:absolute;right:14px;top:50%;translate:0 -50%;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;pointer-events:none;opacity:0;scale:.3;transition:opacity .25s,scale .35s var(--ease-spring)}
+.field-control.has-toggle .field-state{right:48px}
+input.is-valid{border-color:var(--ok)!important}
+input.is-valid:focus{box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 20%,transparent)!important}
+input.is-invalid{border-color:var(--bad)!important;animation:shake .45s var(--ease-out)}
+input.is-invalid:focus{box-shadow:0 0 0 4px color-mix(in srgb,var(--bad) 20%,transparent)!important}
+.field-control:has(input.is-valid) .field-state{opacity:1;scale:1;background:var(--ok);color:#fff}
+.field-control:has(input.is-valid) .field-state::before{content:"✓"}
+.field-control:has(input.is-invalid) .field-state{opacity:1;scale:1;background:var(--bad);color:#fff}
+.field-control:has(input.is-invalid) .field-state::before{content:"!"}
+@keyframes shake{20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+
+.field-msg{display:block;min-height:0;max-height:0;overflow:hidden;opacity:0;margin-top:0;font-size:12px;line-height:1.4;letter-spacing:normal;text-transform:none;font-weight:500;
+  transform:translateY(-6px);transition:max-height .35s var(--ease-out),opacity .3s,transform .35s var(--ease-out),margin .3s}
+.field-msg.show{max-height:60px;opacity:1;transform:none;margin-top:7px}
+.field-msg.is-error{color:var(--bad)}
+.field-msg.is-ok{color:var(--ok)}
+.field-msg.is-warn{color:var(--warn)}
+.field-hint{display:block;font-size:11px;color:var(--muted);margin-top:6px;letter-spacing:normal;text-transform:none;font-weight:400}
+
+.pw-toggle{position:absolute;right:8px;top:50%;translate:0 -50%;border:0;background:transparent;color:var(--muted);cursor:pointer;padding:6px 8px;border-radius:8px;font:700 11px 'DM Sans',sans-serif;letter-spacing:.5px;transition:color .2s,background .2s}
+.pw-toggle:hover{color:var(--text);background:color-mix(in srgb,var(--text) 8%,transparent)}
+
+.strength{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:10px;perspective:400px}
+.strength i{height:6px;border-radius:6px;background:color-mix(in srgb,var(--text) 12%,transparent);transform-origin:bottom;transition:background .3s,transform .4s var(--ease-spring),box-shadow .3s}
+.strength[data-score="1"] i:nth-child(-n+1){background:var(--bad);transform:rotateX(-35deg) scaleY(1.4)}
+.strength[data-score="2"] i:nth-child(-n+2){background:var(--warn);transform:rotateX(-35deg) scaleY(1.4)}
+.strength[data-score="3"] i:nth-child(-n+3){background:#a8d94c;transform:rotateX(-35deg) scaleY(1.4)}
+.strength[data-score="4"] i:nth-child(-n+4){background:var(--ok);transform:rotateX(-35deg) scaleY(1.4);box-shadow:0 0 12px color-mix(in srgb,var(--ok) 50%,transparent)}
+.strength-label{display:block;font-size:11px;margin-top:6px;color:var(--muted);letter-spacing:normal;text-transform:none;font-weight:600}
+.checklist{list-style:none;margin:9px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:11px;color:var(--muted);letter-spacing:normal;text-transform:none;font-weight:500}
+.checklist li{display:flex;gap:6px;align-items:center;transition:color .25s,transform .35s var(--ease-spring)}
+.checklist li::before{content:"○";font-size:11px;transition:transform .4s var(--ease-spring)}
+.checklist li.met{color:var(--ok);transform:translateX(3px)}
+.checklist li.met::before{content:"✓";transform:rotateY(360deg)}
+
+.char-count{position:absolute;right:12px;bottom:-19px;font-size:10px;letter-spacing:.5px;color:var(--muted);text-transform:none;font-weight:600}
+.claim-form{position:relative;padding-bottom:6px}
+.claim-field{flex:1;min-width:0}
+.claim-form{align-items:flex-start;flex-wrap:wrap}
+.claim-form .btn{align-self:flex-start;margin-top:0}
+.code-meter{height:3px;border-radius:3px;margin-top:8px;background:color-mix(in srgb,var(--text) 10%,transparent);overflow:hidden}
+.code-meter b{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--cyan));transition:width .25s var(--ease-out);box-shadow:0 0 10px var(--glow)}
+.code-meter.full b{background:var(--ok)}
+
+.caps-warning{display:none;font-size:11px;margin-top:7px;color:var(--warn);letter-spacing:normal;text-transform:none;font-weight:600}
+.caps-warning.show{display:block;animation:item-in .4s var(--ease-out)}
+
+/* Server error list as animated 3D card */
+.error-list{animation:toast-in .6s var(--ease-spring) both;border-left:3px solid var(--bad)}
+.form-summary{display:none}
+.form-summary.show{display:block}
+
+/* Inline "required" asterisk */
+label .req{color:var(--bad);margin-left:3px;font-weight:700}
+
+/* Dark/light toggle micro-interaction */
+.theme-toggle{transition:transform .5s var(--ease-spring)}
+.theme-toggle:hover{transform:rotate(-8deg) scale(1.06)}
+.theme-toggle.spin{animation:theme-spin .6s var(--ease-spring)}
+@keyframes theme-spin{to{transform:rotate(360deg)}}
+
+/* Smooth theme crossfade */
+html.theme-fade *,html.theme-fade *::before,html.theme-fade *::after{transition:background-color .5s,color .5s,border-color .5s,box-shadow .5s!important}
+
+/* Scroll progress bar (3D glow) */
+.scroll-progress{position:fixed;top:0;left:0;height:3px;width:100%;z-index:300;transform-origin:left;transform:scaleX(0);
+  background:linear-gradient(90deg,var(--accent),var(--cyan),var(--purple));box-shadow:0 0 14px var(--glow);pointer-events:none}
+
+/* Confetti burst canvas for successful claims */
+.confetti{position:fixed;inset:0;z-index:400;pointer-events:none}
+
+/* ---------- Responsive tuning ---------- */
+@media(max-width:680px){
+  .scene3d .cube:nth-child(n+5){display:none}
+  .scene3d .floor{opacity:.14}
+  .checklist{grid-template-columns:1fr}
+  .panel h1,.panel h2,.panel h3,.panel .eyebrow,.panel form{transform:none}
+}
+@media(hover:none){
+  .btn:hover{transform:none}
+  .how-step:hover{transform:none;box-shadow:none}
+  .panel:hover::after{opacity:0}
+}
+
+/* ---------- Reduced motion: keep layout, drop movement ---------- */
+@media(prefers-reduced-motion:reduce){
+  .scene3d .cube,.scene3d .floor,.floating-box,.points-orb,.progress-track span,.progress-track span::after,
+  .notification-nav b,.notification-item.is-unread .notification-icon,.landing-banner .banner-orb{animation:none!important}
+  main.container,.topbar,.metric-card,.notification-item,.activity-item,tbody tr,.code-list code,.notice,
+  .auth-panel,.hero-copy h1,.error-list{animation:none!important;opacity:1!important;transform:none!important}
+  .js-reveal{transform:none;opacity:1}
+  input.is-invalid{animation:none}
+  .btn::before,.ripple{display:none}
+  .scroll-progress{display:none}
+}
+
+/* ==========================================================
+   FULL 3D (WebGL widgets + scroll/transition 3D)
+   ========================================================== */
+.bg-webgl{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;opacity:.85}
+:root[data-theme=light] .bg-webgl{opacity:.55}
+.webgl-bg .scene3d .cube{display:none}
+
+/* Dashboard coin */
+.coin-3d{position:absolute;right:4px;top:4px;width:150px;height:150px;z-index:2;cursor:grab;transform:translateZ(46px);filter:drop-shadow(0 18px 24px rgba(0,0,0,.35))}
+.points-card.has-3d .points-orb{display:none}
+@media(max-width:680px){.coin-3d{width:108px;height:108px}}
+
+/* Auth-page gift box */
+.mini-3d{position:relative;height:300px;max-width:420px;margin-top:22px}
+.mini-3d canvas{position:absolute;inset:0;width:100%;height:100%;outline:none}
+.mini-3d canvas:focus-visible{outline:2px dashed var(--accent);outline-offset:-6px;border-radius:18px}
+.mini-3d.is-ready .floating-box{display:none}
+.mini-3d .floating-box{margin:60px 0 0 30px}
+@media(max-width:680px){.mini-3d{height:230px;margin-inline:auto}}
+
+/* Admin gauge */
+.gauge-wrap{position:relative;height:230px;display:grid;place-items:center;margin:4px 0 6px}
+.gauge-wrap canvas{position:absolute;inset:0;width:100%;height:100%}
+.gauge-wrap .big-rate{position:relative;z-index:1;pointer-events:none;margin:0;text-shadow:0 8px 30px var(--glow)}
+
+/* 3D page leave */
+.page-leave main.container{animation:page-out .45s cubic-bezier(.5,0,.9,.4) forwards}
+.page-leave .topbar{animation:none}
+.page-leave .scene3d .floor{animation-duration:.7s}
+@keyframes page-out{to{opacity:0;transform:perspective(1200px) rotateY(-18deg) translateZ(-300px) scale(.88)}}
+
+/* Scroll-driven 3D (variable --p set by ux.js, -1..1) */
+.step-visual{transform:translateZ(30px) rotateX(calc(var(--p,0)*22deg)) rotateY(calc(var(--p,0)*-16deg));transition:transform .2s linear}
+.landing-banner{transform:perspective(1300px) rotateX(calc(var(--p,0)*9deg)) scale(calc(1 - var(--p,0)*var(--p,0)*.04));transition:transform .2s linear}
+.section-intro{transform:perspective(1000px) rotateX(calc(var(--p,0)*14deg)) translateZ(calc((1 - var(--p,0)*var(--p,0))*20px));transition:transform .2s linear}
+
+@media(prefers-reduced-motion:reduce){
+  .page-leave main.container{animation:none}
+  .step-visual,.landing-banner,.section-intro{transform:none;transition:none}
+  .coin-3d,.gauge-wrap canvas{filter:none}
+}
