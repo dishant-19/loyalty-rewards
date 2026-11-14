@@ -33,7 +33,7 @@ A responsive PHP loyalty website for a factory selling physical products in boxe
    php -S localhost:8000
    ```
 
-4. Open [http://localhost:8000](http://localhost:8000).
+4. Open [http://localhost/loyalty-rewards-php/](http://localhost/loyalty-rewards-php/).
 5. Register a customer account, or sign in with the demo admin account:
    - Email: `admin@example.com`
    - Password: `Admin@12345`
