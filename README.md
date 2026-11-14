@@ -30,7 +30,7 @@ A responsive PHP loyalty website for a factory selling physical products in boxe
 5. From the project folder, run:
 
    ```bash
-   php -S localhost:8000
+   localhost/loyalty-rewards-php/
    ```
 
 4. Open [http://localhost/loyalty-rewards-php/](http://localhost/loyalty-rewards-php/).
